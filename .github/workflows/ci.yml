@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       commit_hash: ${{ steps.check-commit.outputs.short_commit }}
-      need_build: ${{ steps.check-commit.outputs.skip_build }}
+      need_build: ${{ steps.check-commit.outputs.need_build }}
     steps:
       - uses: actions/checkout@v4
         with:
