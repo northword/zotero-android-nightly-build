@@ -120,15 +120,15 @@ jobs:
           name: app-outputs
           path: app/build/outputs
 
-      - name: get properties
+      - name: get version name
         id: metadata
         uses: ActionsTools/read-json-action@main
         with:
           file_path: "app/build/outputs/apk/dev/debug/output-metadata.json"
+          prop_path: 'elements[0].versionName'
 
       - run: |
-          echo ${{ fromJson(steps.metadata.outputs) }}
-          echo ${{ fromJson(steps.metadata.outputs).elements[0].versionName }}
+          echo ${{ steps.metadata.outputs.value }}
 
       # - uses: joutvhu/get-release@v1
       #   id: latest_release
@@ -142,6 +142,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.check.outputs.commit_hash }}
-          name: "${{ fromJson(steps.metadata.outputs).elements[0].versionName }}-${{ needs.check.outputs.commit_hash }}"
+          name: "${{ steps.metadata.outputs.value }}-${{ needs.check.outputs.commit_hash }}"
           artifacts: "app/build/outputs/apk/dev/debug/*.apk"
           token: ${{ secrets.GITHUB_TOKEN }}
