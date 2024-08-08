@@ -64,9 +64,9 @@ jobs:
       #   run: ./gradlew --no-configuration-cache -PpreDexLibs=false publishInternalReleaseBundle --stacktrace
   
       - name: Build with Gradle
-        run: ./gradlew assembleRelease
+        run: ./gradlew build
 
-      - run: ls
+      - run: tree
       
       - name: Upload APK
         uses: actions/upload-artifact@v3
