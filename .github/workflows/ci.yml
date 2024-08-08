@@ -5,8 +5,8 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 0 * * *'   # Run at midnight UTC daily
-  workflow_dispatch:      # Allow manual trigger of the workflow
+    - cron: "0 0 * * *" # Run at midnight UTC daily
+  workflow_dispatch: # Allow manual trigger of the workflow
 
 jobs:
   check:
@@ -17,8 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: 'zotero/zotero-android'
-  
+          repository: "zotero/zotero-android"
+
       - name: Cache last commit hash
         id: cache-hash
         uses: actions/cache@v3
@@ -26,14 +26,14 @@ jobs:
           path: last_commit
           key: zotero-android-commit-hash
           restore-keys: zotero-android-commit-hash
-  
+
       - name: Check for New Commits
         id: check-commit
         run: |
           latest_commit=$(git rev-parse HEAD)
           echo "Latest commit: $latest_commit"
           short_commit=${latest_commit::7}
-  
+
           # Check if cached hash exists and matches the latest commit
           if [[ -f ../last_commit ]] && [[ $(cat ../last_commit) == "$latest_commit" ]]; then
             echo "No new commits. Skipping build."
@@ -53,19 +53,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          repository: 'zotero/zotero-android'
+          repository: "zotero/zotero-android"
 
       - name: set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
-          distribution: 'zulu'
+          java-version: "17"
+          distribution: "zulu"
           cache: gradle
 
       - name: set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       # - name: Writing PSPDFKIT's key into a file to be then picked up by gradle.
       #   run: echo ${{secrets.PSPDFKIT_KEY}} | sed 's/./& /g' > pspdfkit-key.txt
@@ -127,8 +127,8 @@ jobs:
           file_path: "app/build/outputs/apk/dev/debug/output-metadata.json"
 
       - run: |
-          echo ${{ steps.metadata.outputs }}
-          echo ${{ steps.metadata.outputs.elements[0].versionName }}
+          echo ${{ fromJson(steps.metadata.outputs) }}
+          echo ${{ fromJson(steps.metadata.outputs).elements[0].versionName }}
 
       # - uses: joutvhu/get-release@v1
       #   id: latest_release
@@ -141,6 +141,7 @@ jobs:
         # if: ${{ steps.metadata.outputs.elements[0].versionName != steps.latest_release.outputs.tag_name }}
         uses: ncipollo/release-action@v1
         with:
-          tag: "${{ steps.metadata.outputs.elements[0].versionName }}-${{ needs.check.outputs.commit_hash }}"
+          tag: ${{ needs.check.outputs.commit_hash }}
+          name: "${{ fromJson(steps.metadata.outputs).elements[0].versionName }}-${{ needs.check.outputs.commit_hash }}"
           artifacts: "app/build/outputs/apk/dev/debug/*.apk"
           token: ${{ secrets.GITHUB_TOKEN }}
