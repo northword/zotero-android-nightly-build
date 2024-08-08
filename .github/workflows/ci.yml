@@ -5,21 +5,17 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 0 * * *'  # Run at midnight UTC daily
+    - cron: '0 0 * * *'   # Run at midnight UTC daily
   workflow_dispatch:      # Allow manual trigger of the workflow
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           repository: 'zotero/zotero-android'
-      
-      - run: ls
 
       - name: set up JDK
         uses: actions/setup-java@v3
@@ -27,47 +23,45 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
           cache: gradle
-  
+
       - name: set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-  
+
       # - name: Writing PSPDFKIT's key into a file to be then picked up by gradle.
       #   run: echo ${{secrets.PSPDFKIT_KEY}} | sed 's/./& /g' > pspdfkit-key.txt
-  
+
       # - name: Decrypt Keystore
       #   run: openssl aes-256-cbc -d -in .github/keystore.cipher -k ${{secrets.SIGNING_KEY}} -md sha256 > zotero.release.keystore
-  
+
       # - name: Decrypt Keystore secrets
       #   run: openssl aes-256-cbc -d -in .github/keystore-secrets.cipher -k ${{secrets.SIGNING_KEY}} -md sha256 > keystore-secrets.txt
-  
+
       - name: Grant execute permission for bundle_translators.py
         run: chmod +x scripts/bundle_translators.py
-  
+
       - name: Execute bundle_translators.py
         run: python3 scripts/bundle_translators.py
-  
+
       - name: Grant execute permission for bundle_translation.py
         run: chmod +x scripts/bundle_translation.py
-  
+
       - name: Execute bundle_translation.py
         run: python3 scripts/bundle_translation.py
-  
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-  
+
       - name: Download Android dependencies
         run: ./gradlew androidDependencies --no-configuration-cache
-  
+
       # - name: Deploy to Google Play Internal Test Track
       #   run: ./gradlew --no-configuration-cache -PpreDexLibs=false publishInternalReleaseBundle --stacktrace
-  
+
       - name: Build with Gradle
         run: ./gradlew assembleDebug
 
-      - run: tree
-      
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
