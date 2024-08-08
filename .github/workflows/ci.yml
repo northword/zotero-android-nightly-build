@@ -1,6 +1,9 @@
 name: Daily Build Zotero Android
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '0 0 * * *'  # Run at midnight UTC daily
   workflow_dispatch:      # Allow manual trigger of the workflow
