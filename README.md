@@ -4,7 +4,9 @@
 [![Zotero Android CI](https://github.com/zotero/zotero-android/actions/workflows/android.yml/badge.svg)](https://github.com/zotero/zotero-android/actions/workflows/android.yml)
 [![Daily Build Zotero Android](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml/badge.svg)](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml)
 
-This repository pulls the latest code from the [zotero/zotero-android](https://github.com/zotero/zotero-android) repository daily and executes a debug build, the generated build output is published in the [Artifacts of the current workflow run](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml).
+This repository pulls the latest code from the [zotero/zotero-android](https://github.com/zotero/zotero-android) repository daily and executes a debug build, the generated build output is published in the [Artifacts of the current workflow run](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml) and [GitHub Release](https://github.com/northword/zotero-android-nightly-build/releases).
+
+## From Artifacts
 
 In the zip file, `app-dev-debug.xpi` is the installation package: 
 
@@ -18,6 +20,12 @@ app-outputs.zip
 `-- logs
     `-- manifest-merger-dev-debug-report.txt
 ```
+
+## From Release
+
+Each release may contain multiple assets corresponding to all commits after each tag push in the zotero-android repository, with the file name `app-dev-debug-${versionName}-${commitHash}.xpi`.
+
+## Disclaimer
 
 > [!IMPORTANT]
 > 
