@@ -8,8 +8,50 @@ on:
     - cron: '0 0 * * *'   # Run at midnight UTC daily
   workflow_dispatch:      # Allow manual trigger of the workflow
 
+env:
+  short_commit: ''
+  skip_build: 'false'
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'zotero/zotero-android'
+  
+      - name: Cache last commit hash
+        id: cache-hash
+        uses: actions/cache@v3
+        with:
+          path: last_commit
+          key: zotero-android-commit-hash
+          restore-keys: zotero-android-commit-hash
+  
+      - name: Check for New Commits
+        id: check-commit
+        run: |
+          latest_commit=$(git rev-parse HEAD)
+          echo "Latest commit: $latest_commit"
+          short_commit=${latest_commit::7}
+  
+          # Check if cached hash exists and matches the latest commit
+          if [[ -f ../last_commit ]] && [[ $(cat ../last_commit) == "$latest_commit" ]]; then
+            echo "No new commits. Skipping build."
+            echo "skip_build=true" >> $GITHUB_ENV
+          else
+            echo "$latest_commit" > ./last_commit
+            echo "short_commit=$short_commit" >> $GITHUB_ENV
+          fi
+  
+      - name: Skip Build if No New Commits
+        if: env.skip_build == 'true'
+        run: echo "Skipping the build process."
+
   build:
+    needs:
+      - check
+    if: env.skip_build != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,3 +109,42 @@ jobs:
         with:
           name: app-outputs
           path: app/build/outputs
+
+  release:
+    needs:
+      - check
+      - build
+    if: env.skip_build != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-outputs
+          path: app/build/outputs
+
+      - name: get properties
+        id: metadata
+        uses: ActionsTools/read-json-action@main
+        with:
+          file_path: "app/build/outputs/apk/dev/debug/output-metadata.json"
+
+      - run: |
+          echo ${{ steps.metadata.outputs }}
+          echo ${{ steps.metadata.outputs.elements[0].versionName }}
+
+      # - uses: joutvhu/get-release@v1
+      #   id: latest_release
+      #   with:
+      #     latest: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        # if: ${{ steps.metadata.outputs.elements[0].versionName != steps.latest_release.outputs.tag_name }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "${{ steps.metadata.outputs.elements[0].versionName }}-${{ env.short_commit }}"
+          artifacts: "app/build/outputs/apk/dev/debug/*.apk"
+          token: ${{ secrets.GITHUB_TOKEN }}
