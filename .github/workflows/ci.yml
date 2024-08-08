@@ -32,17 +32,25 @@ jobs:
         run: |
           latest_commit=$(git rev-parse HEAD)
           echo "Latest commit: $latest_commit"
+          
           short_commit=${latest_commit::7}
+          echo "short_commit: $short_commit"
+
+          cat last_commit
 
           # Check if cached hash exists and matches the latest commit
-          if [[ -f ../last_commit ]] && [[ $(cat ../last_commit) == "$latest_commit" ]]; then
+          if [[ -f ./last_commit ]] && [[ $(cat ./last_commit) == "$latest_commit" ]]; then
+            need_build=false
             echo "No new commits. Skipping build."
-            echo "need_build=false" >> $GITHUB_OUTPUT
           else
+            need_build=true
+            echo "New commit found, need build."
             echo "$latest_commit" > ./last_commit
-            echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
-            echo "need_build=true" >> $GITHUB_OUTPUT
           fi
+          
+          echo "need build: $need_build"
+          echo "need_build=$need_build" >> $GITHUB_OUTPUT
+          echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
 
   build:
     needs:
