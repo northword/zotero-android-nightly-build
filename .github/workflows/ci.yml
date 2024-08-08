@@ -71,5 +71,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: app-release
-          path: build
+          name: app-outputs
+          path: app/build/outputs
