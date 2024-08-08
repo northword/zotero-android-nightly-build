@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       commit_hash: ${{ steps.check-commit.outputs.short_commit }}
-      skip_build: ${{ steps.check-commit.outputs.skip_build }}
+      need_build: ${{ steps.check-commit.outputs.skip_build }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,16 +37,17 @@ jobs:
           # Check if cached hash exists and matches the latest commit
           if [[ -f ../last_commit ]] && [[ $(cat ../last_commit) == "$latest_commit" ]]; then
             echo "No new commits. Skipping build."
-            echo "skip_build=true" >> $GITHUB_OUTPUT
+            echo "need_build=false" >> $GITHUB_OUTPUT
           else
             echo "$latest_commit" > ./last_commit
             echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
+            echo "need_build=true" >> $GITHUB_OUTPUT
           fi
 
   build:
     needs:
       - check
-    if: ${{ needs.check.outputs.skip_build }}
+    if: ${{ needs.check.outputs.need_build }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +110,7 @@ jobs:
     needs:
       - check
       - build
-    if: ${{ needs.check.outputs.skip_build }}
+    if: ${{ needs.check.outputs.need_build }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
