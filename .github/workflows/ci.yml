@@ -8,13 +8,12 @@ on:
     - cron: '0 0 * * *'   # Run at midnight UTC daily
   workflow_dispatch:      # Allow manual trigger of the workflow
 
-env:
-  short_commit: ''
-  skip_build: 'false'
-
 jobs:
   check:
     runs-on: ubuntu-latest
+    outputs:
+      commit_hash: ${{ steps.check-commit.outputs.short_commit }}
+      skip_build: ${{ steps.check-commit.outputs.skip_build }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,20 +37,16 @@ jobs:
           # Check if cached hash exists and matches the latest commit
           if [[ -f ../last_commit ]] && [[ $(cat ../last_commit) == "$latest_commit" ]]; then
             echo "No new commits. Skipping build."
-            echo "skip_build=true" >> $GITHUB_ENV
+            echo "skip_build=true" >> $GITHUB_OUTPUT
           else
             echo "$latest_commit" > ./last_commit
-            echo "short_commit=$short_commit" >> $GITHUB_ENV
+            echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
           fi
-  
-      - name: Skip Build if No New Commits
-        if: env.skip_build == 'true'
-        run: echo "Skipping the build process."
 
   build:
     needs:
       - check
-    if: env.skip_build != 'true'
+    if: ${{ needs.check.outputs.skip_build }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +109,7 @@ jobs:
     needs:
       - check
       - build
-    if: env.skip_build != 'true'
+    if: ${{ needs.check.outputs.skip_build }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -145,6 +140,6 @@ jobs:
         # if: ${{ steps.metadata.outputs.elements[0].versionName != steps.latest_release.outputs.tag_name }}
         uses: ncipollo/release-action@v1
         with:
-          tag: "${{ steps.metadata.outputs.elements[0].versionName }}-${{ env.short_commit }}"
+          tag: "${{ steps.metadata.outputs.elements[0].versionName }}-${{ needs.check.outputs.commit_hash }}"
           artifacts: "app/build/outputs/apk/dev/debug/*.apk"
           token: ${{ secrets.GITHUB_TOKEN }}
