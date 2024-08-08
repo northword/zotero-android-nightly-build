@@ -36,6 +36,7 @@ jobs:
           short_commit=${latest_commit::7}
           echo "short_commit: $short_commit"
 
+          echo "Last commit from cache:"
           cat last_commit
 
           # Check if cached hash exists and matches the latest commit
@@ -55,7 +56,7 @@ jobs:
   build:
     needs:
       - check
-    if: ${{ needs.check.outputs.need_build }}
+    if: ${{ needs.check.outputs.need_build == true }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +119,7 @@ jobs:
     needs:
       - check
       - build
-    if: ${{ needs.check.outputs.need_build }}
+    if: ${{ needs.check.outputs.need_build == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
