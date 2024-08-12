@@ -19,23 +19,26 @@ jobs:
         with:
           repository: "zotero/zotero-android"
 
+      - name: Check for New Commits
+        run: |
+          latest_commit=$(git rev-parse HEAD)
+          echo "Latest commit: $latest_commit"
+          echo "$latest_commit" > ./latest_commit
+          
+          short_commit=${latest_commit::7}
+          echo "short_commit: $short_commit"
+
       - name: Cache last commit hash
         id: cache-hash
         uses: actions/cache@v3
         with:
           path: last_commit
           key: zotero-android-commit-hash
-          restore-keys: zotero-android-commit-hash
+          restore-keys: zotero-android-commit-hash-${{ latest_commit }}
 
       - name: Check for New Commits
         id: check-commit
         run: |
-          latest_commit=$(git rev-parse HEAD)
-          echo "Latest commit: $latest_commit"
-          
-          short_commit=${latest_commit::7}
-          echo "short_commit: $short_commit"
-
           echo "Last commit from cache:"
           cat last_commit
 
