@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: last_commit
-          key: zotero-android-commit-hash-${{ steps.get-latest-commit.latest_commit }}
+          key: zotero-android-commit-hash-${{ steps.get-latest-commit.outputs.latest_commit }}
 
       - name: Write New Commit hash to Cache
         if: ${{ steps.cache-hash.outputs.cache-hit != 'true' }}
