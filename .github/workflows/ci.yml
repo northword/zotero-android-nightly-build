@@ -5,11 +5,12 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 0 * * *" # Run at midnight UTC daily
-  workflow_dispatch: # Allow manual trigger of the workflow
+    - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   check:
+    name: Check if rebuild is required 
     runs-on: ubuntu-latest
     outputs:
       commit_hash: ${{ steps.get-latest-commit.outputs.short_commit }}
@@ -43,6 +44,7 @@ jobs:
           echo "$latest_commit" > ./last_commit
 
   build:
+    name: Build the APP
     needs:
       - check
     if: ${{ needs.check.outputs.need_build == 'true' }}
@@ -105,6 +107,7 @@ jobs:
           path: app/build/outputs
 
   release:
+    name: Upload the dist to GitHub release
     needs:
       - check
       - build
@@ -129,13 +132,6 @@ jobs:
           echo ${{ steps.metadata.outputs.value }}
           echo ${{ needs.check.outputs.commit_hash }}
           mv app/build/outputs/apk/dev/debug/app-dev-debug.apk app/build/outputs/apk/dev/debug/app-dev-debug-${{ steps.metadata.outputs.value }}-${{ needs.check.outputs.commit_hash }}.apk
-
-      # - uses: joutvhu/get-release@v1
-      #   id: latest_release
-      #   with:
-      #     latest: true
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
         # if: ${{ steps.metadata.outputs.elements[0].versionName != steps.latest_release.outputs.tag_name }}
