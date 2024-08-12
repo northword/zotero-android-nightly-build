@@ -12,49 +12,35 @@ jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      commit_hash: ${{ steps.check-commit.outputs.short_commit }}
-      need_build: ${{ steps.check-commit.outputs.need_build }}
+      commit_hash: ${{ steps.get-latest-commit.outputs.short_commit }}
+      need_build: ${{ steps.cache-hash.outputs.cache-hit != 'true' }}
     steps:
       - uses: actions/checkout@v4
         with:
           repository: "zotero/zotero-android"
 
       - name: Get Latest Commit Hash
+        id: get-latest-commit
         run: |
           latest_commit=$(git rev-parse HEAD)
           echo "Latest commit: $latest_commit"
-          echo "$latest_commit" > ./latest_commit
+          echo "latest_commit=$latest_commit" >> $GITHUB_OUTPUT
           
           short_commit=${latest_commit::7}
           echo "short_commit: $short_commit"
+          echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
 
-      - name: Cache last commit hash
+      - name: Get Last Commit Hash from Cache
         id: cache-hash
         uses: actions/cache@v3
         with:
           path: last_commit
-          key: zotero-android-commit-hash-${{ hashFiles('latest_commit') }}
-          restore-keys: zotero-android-commit-hash
+          key: zotero-android-commit-hash-${{ steps.get-latest-commit.latest_commit }}
 
-      - name: Check for New Commits
-        id: check-commit
+      - name: Write New Commit hash to Cache
+        if: ${{ steps.cache-hash.outputs.cache-hit != 'true' }}
         run: |
-          echo "Last commit from cache:"
-          cat last_commit
-
-          # Check if cached hash exists and matches the latest commit
-          if [[ -f ./last_commit ]] && [[ $(cat ./last_commit) == "$latest_commit" ]]; then
-            need_build=false
-            echo "No new commits. Skipping build."
-          else
-            need_build=true
-            echo "New commit found, need build."
-            echo "$latest_commit" > ./last_commit
-          fi
-          
-          echo "need build: $need_build"
-          echo "need_build=$need_build" >> $GITHUB_OUTPUT
-          echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
+          echo "$latest_commit" > ./last_commit
 
   build:
     needs:
