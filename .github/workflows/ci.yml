@@ -56,7 +56,7 @@ jobs:
   build:
     needs:
       - check
-    if: ${{ needs.check.outputs.need_build == true }}
+    if: ${{ needs.check.outputs.need_build == "true" }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -119,7 +119,7 @@ jobs:
     needs:
       - check
       - build
-    if: ${{ needs.check.outputs.need_build == true }}
+    if: ${{ needs.check.outputs.need_build == "true" }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
