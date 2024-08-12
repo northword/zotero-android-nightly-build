@@ -34,7 +34,7 @@ jobs:
         with:
           path: last_commit
           key: zotero-android-commit-hash
-          restore-keys: zotero-android-commit-hash-${{ latest_commit }}
+          restore-keys: zotero-android-commit-hash-${{ hashFile(latest_commit) }}
 
       - name: Check for New Commits
         id: check-commit
