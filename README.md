@@ -7,6 +7,7 @@
 ![GitHub Release](https://img.shields.io/github/v/release/northword/zotero-android-nightly-build?label=Version%20from%20This%20Repo)
 ![GitHub Release Date](https://img.shields.io/github/release-date/northword/zotero-android-nightly-build)
 [![Daily Build Zotero Android](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml/badge.svg)](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml)
+![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/northword/zotero-android-nightly-build/latest/total)
 
 This repository pulls the latest code from the [zotero/zotero-android](https://github.com/zotero/zotero-android) repository daily and executes a debug build, the generated build output is published in the [Artifacts of the current workflow run](https://github.com/northword/zotero-android-nightly-build/actions/workflows/ci.yml) and [GitHub Release](https://github.com/northword/zotero-android-nightly-build/releases).
 
