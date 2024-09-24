@@ -138,6 +138,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.metadata.outputs.value }}
+          makeLatest: true
           allowUpdates: true
           name: ${{ steps.metadata.outputs.value }}
           body: 'Please see https://github.com/zotero/zotero-android/commits/master/ for changelog.'
