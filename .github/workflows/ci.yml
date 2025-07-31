@@ -43,6 +43,61 @@ jobs:
         run: |
           echo "$latest_commit" > ./last_commit
 
+  check-android-yml:
+    runs-on: ubuntu-latest
+    needs:
+      - check
+    if: ${{ needs.check.outputs.need_build == 'true' }}
+    env:
+      CHANGED: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore cached last android.yml
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: cached_android.yml
+          key: zotero-android-workflow-cache
+
+      - name: Fetch latest android.yml from zotero/zotero-android
+        run: |
+          curl -sL https://raw.githubusercontent.com/zotero/zotero-android/main/.github/workflows/android.yml -o latest_android.yml
+
+      - name: Ensure previous cache exists
+        run: |
+          if [ ! -f cached_android.yml ]; then
+            cp latest_android.yml cached_android.yml
+          fi
+
+      - name: Compare with cached version
+        run: |
+          diff -u cached_android.yml latest_android.yml > diff.txt || true
+
+          if [ -s diff.txt ]; then
+            echo '```diff' > diff.txt.tmp
+            cat diff.txt >> diff.txt.tmp
+            echo '```' >> diff.txt.tmp
+            mv diff.txt.tmp diff.txt
+            echo "CHANGED=true" >> $GITHUB_ENV
+          else
+            echo "No changes detected."
+          fi
+
+      - name: Create issue if android.yml changed
+        if: env.CHANGED == 'true'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Upstream android.yml has changed"
+          content-filepath: diff.txt
+          labels: "upstream"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update cache with latest android.yml
+        if: env.CHANGED == 'true'
+        run: cp latest_android.yml cached_android.yml
+
   build:
     name: Build the APP
     needs:
