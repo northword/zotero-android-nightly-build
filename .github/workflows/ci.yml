@@ -54,36 +54,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fetch latest android.yml from zotero/zotero-android
+        run: |
+          curl -sL https://raw.githubusercontent.com/zotero/zotero-android/main/.github/workflows/android.yml -o latest_android.yml
+
       - name: Restore cached last android.yml
         id: cache
         uses: actions/cache@v4
         with:
           path: cached_android.yml
-          key: zotero-android-workflow-cache
-
-      - name: Fetch latest android.yml from zotero/zotero-android
-        run: |
-          curl -sL https://raw.githubusercontent.com/zotero/zotero-android/main/.github/workflows/android.yml -o latest_android.yml
-
-      - name: Ensure previous cache exists
-        run: |
-          if [ ! -f cached_android.yml ]; then
-            cp latest_android.yml cached_android.yml
-          fi
+          key: zotero-android-workflow-cache-${{ hashFiles('latest_android.yml') }}
+          restore-keys: |
+            zotero-android-workflow-cache-
 
       - name: Compare with cached version
         run: |
-          diff -u cached_android.yml latest_android.yml > diff.txt || true
+          if [ -f cached_android.yml ]; then
+            diff -u cached_android.yml latest_android.yml > diff.txt || true
 
-          if [ -s diff.txt ]; then
-            echo '```diff' > diff.txt.tmp
-            cat diff.txt >> diff.txt.tmp
-            echo '```' >> diff.txt.tmp
-            mv diff.txt.tmp diff.txt
-            echo "CHANGED=true" >> $GITHUB_ENV
+            if [ -s diff.txt ]; then
+              echo '```diff' > diff.txt.tmp
+              cat diff.txt >> diff.txt.tmp
+              echo '```' >> diff.txt.tmp
+              mv diff.txt.tmp diff.txt
+              echo "CHANGED=true" >> $GITHUB_ENV
+            else
+              echo "No upstream android.yml changes detected."
+            fi
           else
-            echo "No changes detected."
+            echo "No previous cached android.yml available; initializing cache."
           fi
+
+          cp latest_android.yml cached_android.yml
 
       - name: Create issue if android.yml changed
         if: env.CHANGED == 'true'
@@ -94,9 +96,14 @@ jobs:
           labels: "upstream"
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update cache with latest android.yml
-        if: env.CHANGED == 'true'
-        run: cp latest_android.yml cached_android.yml
+      - name: Save latest android.yml to cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: cached_android.yml
+          key: zotero-android-workflow-cache-${{ hashFiles('latest_android.yml') }}
+          restore-keys: |
+            zotero-android-workflow-cache-
 
   build:
     name: Build the APP
