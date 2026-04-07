@@ -10,7 +10,7 @@ on:
 
 jobs:
   check:
-    name: Check if rebuild is required 
+    name: Check if rebuild is required
     runs-on: ubuntu-latest
     outputs:
       commit_hash: ${{ steps.get-latest-commit.outputs.short_commit }}
@@ -26,7 +26,7 @@ jobs:
           latest_commit=$(git rev-parse HEAD)
           echo "Latest commit: $latest_commit"
           echo "latest_commit=$latest_commit" >> $GITHUB_OUTPUT
-          
+
           short_commit=${latest_commit::7}
           echo "short_commit: $short_commit"
           echo "short_commit=$short_commit" >> $GITHUB_OUTPUT
@@ -173,6 +173,12 @@ jobs:
       - name: Execute bundle_utilities.sh
         run: scripts/bundle_utilities.sh
 
+      - name: Grant execute permission for bundle_reader.sh
+        run: chmod +x scripts/bundle_reader.sh
+
+      - name: Execute bundle_reader.sh
+        run: scripts/bundle_reader.sh
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -211,7 +217,7 @@ jobs:
         uses: ActionsTools/read-json-action@main
         with:
           file_path: "app/build/outputs/apk/dev/debug/output-metadata.json"
-          prop_path: 'elements[0].versionName'
+          prop_path: "elements[0].versionName"
 
       - run: |
           echo ${{ steps.metadata.outputs.value }}
@@ -226,6 +232,6 @@ jobs:
           makeLatest: true
           allowUpdates: true
           name: ${{ steps.metadata.outputs.value }}
-          body: 'Please see https://github.com/zotero/zotero-android/commits/master/ for changelog.'
+          body: "Please see https://github.com/zotero/zotero-android/commits/master/ for changelog."
           artifacts: "app/build/outputs/apk/dev/debug/*.apk"
           token: ${{ secrets.GITHUB_TOKEN }}
