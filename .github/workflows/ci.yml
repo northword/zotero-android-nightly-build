@@ -43,68 +43,6 @@ jobs:
         run: |
           echo "$latest_commit" > ./last_commit
 
-  check-android-yml:
-    runs-on: ubuntu-latest
-    needs:
-      - check
-    if: ${{ needs.check.outputs.need_build == 'true' }}
-    env:
-      CHANGED: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Fetch latest android.yml from zotero/zotero-android
-        run: |
-          curl -sL https://raw.githubusercontent.com/zotero/zotero-android/main/.github/workflows/android.yml -o latest_android.yml
-
-      - name: Restore cached last android.yml
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: cached_android.yml
-          key: zotero-android-workflow-cache-${{ hashFiles('latest_android.yml') }}
-          restore-keys: |
-            zotero-android-workflow-cache-
-
-      - name: Compare with cached version
-        run: |
-          if [ -f cached_android.yml ]; then
-            diff -u cached_android.yml latest_android.yml > diff.txt || true
-
-            if [ -s diff.txt ]; then
-              echo '```diff' > diff.txt.tmp
-              cat diff.txt >> diff.txt.tmp
-              echo '```' >> diff.txt.tmp
-              mv diff.txt.tmp diff.txt
-              echo "CHANGED=true" >> $GITHUB_ENV
-            else
-              echo "No upstream android.yml changes detected."
-            fi
-          else
-            echo "No previous cached android.yml available; initializing cache."
-          fi
-
-          cp latest_android.yml cached_android.yml
-
-      - name: Create issue if android.yml changed
-        if: env.CHANGED == 'true'
-        uses: peter-evans/create-issue-from-file@v5
-        with:
-          title: "Upstream android.yml has changed"
-          content-filepath: diff.txt
-          labels: "upstream"
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Save latest android.yml to cache
-        if: always()
-        uses: actions/cache@v4
-        with:
-          path: cached_android.yml
-          key: zotero-android-workflow-cache-${{ hashFiles('latest_android.yml') }}
-          restore-keys: |
-            zotero-android-workflow-cache-
-
   build:
     name: Build the APP
     needs:
@@ -117,26 +55,18 @@ jobs:
           submodules: recursive
           repository: "zotero/zotero-android"
 
+      # ===== auto-synced from upstream android.yml (managed by scripts/sync_ci.py) =====
       - name: set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: "17"
-          distribution: "zulu"
+          java-version: '17'
+          distribution: 'zulu'
           cache: gradle
 
       - name: set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-
-      # - name: Writing PSPDFKIT's key into a file to be then picked up by gradle.
-      #   run: echo ${{secrets.PSPDFKIT_KEY}} | sed 's/./& /g' > pspdfkit-key.txt
-
-      # - name: Decrypt Keystore
-      #   run: openssl aes-256-cbc -d -in .github/keystore.cipher -k ${{secrets.SIGNING_KEY}} -md sha256 > zotero.release.keystore
-
-      # - name: Decrypt Keystore secrets
-      #   run: openssl aes-256-cbc -d -in .github/keystore-secrets.cipher -k ${{secrets.SIGNING_KEY}} -md sha256 > keystore-secrets.txt
+          python-version: '3.10'
 
       - name: Grant execute permission for bundle_translators.py
         run: chmod +x scripts/bundle_translators.py
@@ -189,9 +119,18 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Download Android dependencies
-        run: ./gradlew androidDependencies --no-configuration-cache
+      # ===== end auto-synced =====
 
+      # Steps that need upstream secrets are intentionally NOT synced
+      # (PSPDFKit key / release keystore / google-services decrypt):
+      # - name: Writing PSPDFKIT's key into a file to be then picked up by gradle.
+      #   run: echo ${{secrets.PSPDFKIT_KEY}} | sed 's/./& /g' > pspdfkit-key.txt
+      # - name: Decrypt Keystore
+      #   run: openssl aes-256-cbc -d -in .github/keystore.cipher -k ${{secrets.SIGNING_KEY}} -md sha256 > zotero.release.keystore
+      # - name: Decrypt Keystore secrets
+      #   run: openssl aes-256-cbc -d -in .github/keystore-secrets.cipher -k ${{secrets.SIGNING_KEY}} -md sha256 > keystore-secrets.txt
+
+      # Google Play deployment is skipped (this repo only ships debug builds):
       # - name: Deploy to Google Play Internal Test Track
       #   run: ./gradlew --no-configuration-cache -PpreDexLibs=false publishInternalReleaseBundle --stacktrace
 

@@ -33,6 +33,21 @@ app-outputs.zip
     
 </details>
 
+## Sync with upstream build workflow
+
+The build steps of this repo's `ci.yml` mirror the upstream [`zotero/zotero-android` `android.yml`](https://github.com/zotero/zotero-android/blob/master/.github/workflows/android.yml). The auto-synced region covers the environment setup steps (`set up JDK`, `set up Python`, etc.) and the bundle scripts, so upstream's Java/Python/action-version bumps are picked up automatically. Steps that need upstream secrets (PSPDFKit key, keystore, google-services decrypt) and the Google Play deploy step are intentionally excluded.
+
+The [`Sync Upstream` workflow](.github/workflows/upstream-watch.yml) runs twice a day and:
+
+1. Fetches the latest upstream `android.yml` and compares it with the committed reference [`.github/upstream-android.yml`](.github/upstream-android.yml).
+2. When the upstream workflow changes, it runs [`scripts/sync_ci.py`](scripts/sync_ci.py) to update the build steps in `ci.yml`, then opens a pull request (labeled `upstream`) containing the change and the full diff. The reference file is updated so the same change is only reported once.
+
+You can also run it manually via **Actions → Sync Upstream → Run workflow**, or run the script locally:
+
+```bash
+python3 scripts/sync_ci.py .github/workflows/ci.yml .github/upstream-android.yml
+```
+
 ## Disclaimer
 
 > [!IMPORTANT]

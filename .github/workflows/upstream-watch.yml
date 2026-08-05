@@ -1,0 +1,114 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "30 6,18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check:
+    name: Check upstream android.yml
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch latest android.yml from zotero/zotero-android
+        run: |
+          curl -sL https://raw.githubusercontent.com/zotero/zotero-android/master/.github/workflows/android.yml -o upstream-android.yml
+
+      - name: Compare with committed reference
+        id: compare
+        run: |
+          if [ -f .github/upstream-android.yml ] && diff -q .github/upstream-android.yml upstream-android.yml >/dev/null 2>&1; then
+            echo "No upstream android.yml changes detected."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Upstream android.yml has changed."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate changes file
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          {
+            echo "### Upstream \`android.yml\` has changed"
+            echo ""
+            echo "Diff against [zotero/zotero-android](https://github.com/zotero/zotero-android/blob/master/.github/workflows/android.yml):"
+            echo ""
+            echo "\`\`\`diff"
+            diff -u .github/upstream-android.yml upstream-android.yml || true
+            echo "\`\`\`"
+          } > upstream-changes.md
+
+      - name: Upload upstream file
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-android.yml
+          path: upstream-android.yml
+          retention-days: 1
+
+      - name: Upload changes file
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-changes.md
+          path: upstream-changes.md
+          retention-days: 1
+
+  sync:
+    name: Sync build steps and open pull request
+    needs: check
+    if: ${{ needs.check.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: upstream-android.yml
+          path: .
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: upstream-changes.md
+          path: .
+
+      - name: Sync ci.yml build steps from upstream android.yml
+        run: python3 scripts/sync_ci.py .github/workflows/ci.yml upstream-android.yml
+
+      - name: Update reference copy
+        run: cp upstream-android.yml .github/upstream-android.yml
+
+      - name: Show what will be committed
+        run: |
+          git status --short
+          git diff --stat
+
+      - name: Create or update pull request
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Sync build steps from upstream android.yml"
+          branch: upstream-sync/auto
+          delete-branch: true
+          title: "Upstream android.yml has changed"
+          body-path: upstream-changes.md
+          labels: upstream
+
+      - name: Create issue if a pull request could not be created
+        if: ${{ steps.pr.outputs.pull-request-number == '' }}
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Upstream android.yml has changed"
+          content-filepath: upstream-changes.md
+          labels: upstream
+          token: ${{ secrets.GITHUB_TOKEN }}
