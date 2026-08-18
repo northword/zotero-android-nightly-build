@@ -5,13 +5,12 @@ on:
     - cron: "30 6,18 * * *"
   workflow_dispatch:
 
+# `workflows: write` is required below: without it GitHub rejects the auto-sync
+# push with "refusing to allow a GitHub App to create or update workflow ...".
 permissions:
   contents: write
   pull-requests: write
   issues: write
-  # Required so the GITHUB_TOKEN may update .github/workflows/ci.yml (which
-  # the auto-sync step modifies). Without `workflows` scope GitHub rejects the
-  # push with "refusing to allow a GitHub App to create or update workflow ...".
   workflows: write
 
 jobs:
