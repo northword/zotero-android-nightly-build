@@ -110,6 +110,12 @@ jobs:
           title: "Upstream android.yml has changed"
           body-path: upstream-changes.md
           labels: upstream
+          # Only commit the synced workflow and the updated reference copy.
+          # The downloaded artifacts (upstream-changes.md, root upstream-android.yml)
+          # are workspace temp files and must not be committed.
+          add-paths: |
+            .github/workflows/ci.yml
+            .github/upstream-android.yml
 
       - name: Create issue if a pull request could not be created
         if: ${{ steps.pr.outputs.pull-request-number == '' }}
