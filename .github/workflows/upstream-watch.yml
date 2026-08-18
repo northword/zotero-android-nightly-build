@@ -5,13 +5,13 @@ on:
     - cron: "30 6,18 * * *"
   workflow_dispatch:
 
-# `workflows: write` is required below: without it GitHub rejects the auto-sync
-# push with "refusing to allow a GitHub App to create or update workflow ...".
+# The auto-sync PR rewrites .github/workflows/ci.yml. The automatic GITHUB_TOKEN
+# cannot push workflow-file changes (it has no `workflows` scope), so the push uses
+# a PAT secret (WORKFLOW_TOKEN) that has Contents + Workflows write permission.
 permissions:
   contents: write
   pull-requests: write
   issues: write
-  workflows: write
 
 jobs:
   check:
@@ -73,6 +73,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # PAT (Contents + Workflows write) so the subsequent push of the
+          # ci.yml changes is authorized. GITHUB_TOKEN alone cannot do this.
+          token: ${{ secrets.WORKFLOW_TOKEN }}
 
       - uses: actions/download-artifact@v7
         with:
@@ -99,7 +103,7 @@ jobs:
         id: pr
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WORKFLOW_TOKEN }}
           commit-message: "Sync build steps from upstream android.yml"
           branch: upstream-sync/auto
           delete-branch: true
