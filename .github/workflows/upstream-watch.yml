@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  # Required so the GITHUB_TOKEN may update .github/workflows/ci.yml (which
+  # the auto-sync step modifies). Without `workflows` scope GitHub rejects the
+  # push with "refusing to allow a GitHub App to create or update workflow ...".
+  workflows: write
 
 jobs:
   check:
@@ -17,7 +21,7 @@ jobs:
     outputs:
       changed: ${{ steps.compare.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Fetch latest android.yml from zotero/zotero-android
         run: |
@@ -49,7 +53,7 @@ jobs:
 
       - name: Upload upstream file
         if: steps.compare.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: upstream-android.yml
           path: upstream-android.yml
@@ -57,7 +61,7 @@ jobs:
 
       - name: Upload changes file
         if: steps.compare.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: upstream-changes.md
           path: upstream-changes.md
@@ -69,14 +73,14 @@ jobs:
     if: ${{ needs.check.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: upstream-android.yml
           path: .
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: upstream-changes.md
           path: .
@@ -94,7 +98,7 @@ jobs:
 
       - name: Create or update pull request
         id: pr
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Sync build steps from upstream android.yml"
@@ -106,7 +110,7 @@ jobs:
 
       - name: Create issue if a pull request could not be created
         if: ${{ steps.pr.outputs.pull-request-number == '' }}
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/create-issue-from-file@v6
         with:
           title: "Upstream android.yml has changed"
           content-filepath: upstream-changes.md
